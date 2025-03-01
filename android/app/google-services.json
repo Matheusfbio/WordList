@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "7905655240",
+    "project_id": "wordlistenglish",
+    "storage_bucket": "wordlistenglish.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:7905655240:android:2f0c568ee06efbac7a68fd",
+        "android_client_info": {
+          "package_name": "com.matheusfabio.EnglishwordList"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBAXgn9mKNTpyG8YXFK2MBZZ8DB6wCONLw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

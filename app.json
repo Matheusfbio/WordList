@@ -1,0 +1,46 @@
+{
+  "expo": {
+    "name": "English-wordList",
+    "slug": "English-wordList",
+    "scheme": "english-wordlist",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "runtimeVersion": {
+        "policy": "appVersion"
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "package": "com.matheusfabio.EnglishwordList",
+      "runtimeVersion": "1.0.0"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": ["expo-router", "expo-sqlite"],
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "2f59c25e-eded-4382-9aef-ed1f5d5b466a"
+      }
+    },
+    "updates": {
+      "url": "https://u.expo.dev/2f59c25e-eded-4382-9aef-ed1f5d5b466a"
+    }
+  }
+}
