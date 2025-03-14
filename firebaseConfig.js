@@ -8,17 +8,18 @@ import {
   getDocs,
 } from "firebase/firestore";
 import { getDatabase } from "firebase/database";
+import Constants from "expo-constants";
 
 // Configuração do Firebase
 const firebaseConfig = {
-  apiKey: "AIzaSyCdxvae369zQ2g0wFORXD2c8wm6-DXm0Qg",
-  authDomain: "wordlistenglish.firebaseapp.com",
-  projectId: "wordlistenglish",
-  databaseURL: "https://wordlistenglish-default-rtdb.firebaseio.com/",
-  storageBucket: "wordlistenglish.firebasestorage.app",
-  messagingSenderId: "7905655240",
-  appId: "1:7905655240:web:1a0e2e8becbe95bf7a68fd",
-  measurementId: "G-DB7DD9S70L",
+  apiKey: Constants.expoConfig.extra.API_KEY,
+  authDomain: Constants.expoConfig.extra.AUTH_DOMAIN,
+  projectId: Constants.expoConfig.extra.PROJECT_ID,
+  databaseURL: Constants.expoConfig.extra.DATABASE_URL,
+  storageBucket: Constants.expoConfig.extra.STORAGE_BUCKET,
+  messagingSenderId: Constants.expoConfig.extra.MESSAGING_SENDER_ID,
+  appId: Constants.expoConfig.extra.APP_ID,
+  measurementId: Constants.expoConfig.extra.MEASUREMENT_ID,
 };
 
 // Inicialize o Firebase
