@@ -8,10 +8,11 @@ import {
   getDocs,
 } from "firebase/firestore";
 import { getDatabase } from "firebase/database";
+import Constants from "expo-constants";
 
 // Configuração do Firebase
 const firebaseConfig = {
-  apiKey: "AIzaSyCdxvae369zQ2g0wFORXD2c8wm6-DXm0Qg",
+  apiKey: Constants.expoConfig.extra.APIKEY,
   authDomain: "wordlistenglish.firebaseapp.com",
   projectId: "wordlistenglish",
   databaseURL: "https://wordlistenglish-default-rtdb.firebaseio.com/",

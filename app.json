@@ -17,7 +17,8 @@
       "supportsTablet": true,
       "runtimeVersion": {
         "policy": "appVersion"
-      }
+      },
+      "bundleIdentifier": "com.matheusfabio.EnglishwordList"
     },
     "android": {
       "adaptiveIcon": {
@@ -35,6 +36,15 @@
       "router": {
         "origin": false
       },
+      "API_KEY": "AIzaSyCdxvae369zQ2g0wFORXD2c8wm6-DXm0Qg",
+      "AUTH_DOMAIN": "wordlistenglish.firebaseapp.com",
+      "PROJECT_ID": "wordlistenglish",
+      "DATABASE_URL": "https://wordlistenglish-default-rtdb.firebaseio.com/",
+      "STORAGEBUCKET": "wordlistenglish.firebasestorage.app",
+      "MESSAGING_SENDER_ID": "7905655240",
+      "APP_ID": "1:7905655240:web:1a0e2e8becbe95bf7a68fd",
+      "MEASUREMENT_ID": "G-DB7DD9S70L",
+
       "eas": {
         "projectId": "2f59c25e-eded-4382-9aef-ed1f5d5b466a"
       }
