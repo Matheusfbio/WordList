@@ -1,8 +1,6 @@
 import { useEffect, useState } from "react";
-
 import {
   ActivityIndicator,
-  Button,
   FlatList,
   StyleSheet,
   Text,
@@ -10,26 +8,37 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import Toast from "react-native-toast-message";
+import Toast, { BaseToast, ErrorToast } from "react-native-toast-message";
+import { Audio } from "expo-av";
+import { ref, onValue, set, push } from "firebase/database";
+import { db } from "../../../firebaseConfig";
 
 interface Word {
   id: string;
   word: string;
   definition: string;
   phonetic: string;
-  synonyms?: string[];
-  example?: string;
+  audioUrl?: string;
 }
 
 export default function WordList() {
-  const [searchTerm, setSearchTerm] = useState<string>(""); // Estado para o termo de busca
-  const [words, setWords] = useState<Word[]>([]);
+  const [selectedWord, setSelectedWord] = useState<Word | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [history, setHistory] = useState<string[]>([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [words, setWords] = useState<Word[]>([]);
 
-  const fetchWordsFromAPI = async () => {
+  useEffect(() => {
+    const historyRef = ref(db, "history");
+    onValue(historyRef, (snapshot) => {
+      const data = snapshot.val();
+      setHistory(data ? Object.values(data) : []);
+    });
+  }, []);
+
+  const fetchWordDetails = async () => {
     if (!searchTerm.trim()) return;
-
     setLoading(true);
     setError(null);
     setWords([]);
@@ -38,69 +47,95 @@ export default function WordList() {
       const response = await fetch(
         `https://api.dictionaryapi.dev/api/v2/entries/en/${searchTerm}`
       );
-
-      if (!response.ok) {
-        throw new Error("Essa palavra não existe");
-      }
+      if (!response.ok) throw new Error("Essa palavra não existe");
 
       const data = await response.json();
-
-      const fetchedWords: Word[] = data.map((entry: any) => ({
-        id: entry.word, // Usando a palavra como ID único
-        word: entry.word,
-        phonetic: entry.phonetic || "Pronúncia não disponível",
+      const fetchedWord: Word = {
+        id: data[0].word,
+        word: data[0].word,
+        phonetic: data[0].phonetics?.[0]?.text || "Pronúncia não disponível",
         definition:
-          entry.meanings
+          data[0].meanings
             ?.flatMap((meaning: any) =>
-              meaning.definitions.map((def: any) => {
-                const definitionText = def.definition;
-                const exampleText = def.example
-                  ? `Exemplo: ${def.example}`
-                  : "";
-                return `${definitionText}\n${exampleText}`;
-              })
+              meaning.definitions.map((def: any) => def.definition)
             )
             ?.join("\n") || "Definição não disponível",
-        synonyms: entry.meanings?.flatMap((meaning: any) => meaning.synonyms),
-      }));
+        audioUrl: data[0].phonetics?.find((p: any) => p.audio)?.audio || null,
+      };
 
-      setWords(fetchedWords);
+      setWords([fetchedWord]);
+
+      // Salva a palavra pesquisada no Firebase para o histórico
+      const newHistoryRef = push(ref(db, "history"));
+      await set(newHistoryRef, fetchedWord.word);
     } catch (err: any) {
-      console.error("Erro ao buscar palavras:", err);
       setError(err.message || "Erro ao carregar os dados.");
     } finally {
       setLoading(false);
     }
   };
 
-  const showToast = () => {
-    Toast.show({
-      type: "success",
-      text1: "Hello",
-      text2: "This is some something 👋",
-    });
+  const playAudio = async (audioUrl?: string) => {
+    if (!audioUrl) return;
+    const { sound } = await Audio.Sound.createAsync({ uri: audioUrl });
+    await sound.playAsync();
+  };
+  const toastConfig = {
+    success: (props: any) => (
+      <BaseToast
+        {...props}
+        style={{ borderLeftColor: "green", height: 50, width: 370 }} // Aumentando a altura
+        text1Style={{
+          fontSize: 18, // Tamanho do título maior
+          fontWeight: "bold",
+        }}
+        text2Style={{
+          fontSize: 16, // Tamanho do subtítulo maior
+        }}
+      />
+    ),
+    error: (props: any) => (
+      <ErrorToast
+        {...props}
+        style={{ borderLeftColor: "red", height: 80 }} // Aumentando a altura
+        text1Style={{
+          fontSize: 18, // Tamanho do título maior
+          fontWeight: "bold",
+        }}
+        text2Style={{
+          fontSize: 16, // Tamanho do subtítulo maior
+        }}
+      />
+    ),
+  };
+
+  // Função para adicionar palavra aos favoritos
+  const addToFavorites = async (word: Word) => {
+    try {
+      await set(ref(db, `favorites/${word.id}`), word);
+      Toast.show({
+        type: "success",
+        text1: "Palavra adicionada aos favoritos!",
+      });
+    } catch (error) {
+      console.error("Erro ao adicionar aos favoritos:", error);
+    }
   };
 
   return (
     <View style={styles.container}>
-      {/* Campo de Pesquisa */}
       <TextInput
         style={styles.input}
         placeholder="Digite uma palavra"
         value={searchTerm}
         onChangeText={setSearchTerm}
-        onSubmitEditing={fetchWordsFromAPI} // Permite buscar ao pressionar Enter
+        onSubmitEditing={fetchWordDetails}
       />
 
-      {/* Botão de Buscar */}
-      <TouchableOpacity style={styles.button} onPress={fetchWordsFromAPI}>
+      <TouchableOpacity style={styles.button} onPress={fetchWordDetails}>
         <Text style={styles.buttonText}>Buscar</Text>
       </TouchableOpacity>
-      <TouchableOpacity style={styles.button} onPress={showToast}>
-        <Text style={styles.buttonText}>Show toast</Text>
-      </TouchableOpacity>
 
-      {/* Loading */}
       {loading && (
         <View style={styles.loading}>
           <ActivityIndicator size="large" color="#0000ff" />
@@ -108,27 +143,33 @@ export default function WordList() {
         </View>
       )}
 
-      {/* Erro */}
       {error && <Text style={{ color: "red", marginTop: 10 }}>{error}</Text>}
 
-      {/* Lista de Resultados */}
       <FlatList
         data={words}
-        keyExtractor={(item, index) => `${item.id}-${index}`} // Combina id e índice
+        keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
           <View style={styles.item}>
             <Text style={styles.word}>{item.word}</Text>
             <Text style={styles.phonetic}>{item.phonetic}</Text>
             <Text style={styles.definition}>{item.definition}</Text>
-            {item.synonyms && item.synonyms.length > 0 && (
-              <Text style={styles.synonyms}>
-                Sinônimos: {item.synonyms.join(", ")}
-              </Text>
+            {item.audioUrl && (
+              <TouchableOpacity onPress={() => playAudio(item.audioUrl)}>
+                <Text style={styles.audioText}>▶ Ouvir pronúncia</Text>
+              </TouchableOpacity>
             )}
+            <TouchableOpacity
+              style={styles.favoriteButton}
+              onPress={() => addToFavorites(item)}
+            >
+              <Text style={styles.favoriteButtonText}>
+                Adicionar aos Favoritos
+              </Text>
+            </TouchableOpacity>
           </View>
         )}
       />
-      <Toast bottomOffset={10} />
+      <Toast position="bottom" config={toastConfig} />
     </View>
   );
 }
@@ -181,14 +222,20 @@ const styles = StyleSheet.create({
     fontSize: 14,
     marginTop: 5,
   },
-  synonyms: {
-    fontSize: 14,
+  audioText: {
+    color: "blue",
     marginTop: 5,
-    color: "#555",
+    fontSize: 14,
   },
-  emptyMessage: {
-    marginTop: 20,
-    textAlign: "center",
-    color: "#aaa",
+  favoriteButton: {
+    backgroundColor: "#007bff",
+    padding: 10,
+    borderRadius: 5,
+    alignItems: "center",
+    marginTop: 10,
+  },
+  favoriteButtonText: {
+    color: "#fff",
+    fontWeight: "bold",
   },
 });
