@@ -8,10 +8,11 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import Toast, { BaseToast, ErrorToast } from "react-native-toast-message";
+import Toast from "react-native-toast-message";
 import { Audio } from "expo-av";
 import { ref, onValue, set, push } from "firebase/database";
 import { db } from "../../../firebaseConfig";
+import { toastConfig } from "@/Components/CustomToast"; // Importando o CustomToast
 
 interface Word {
   id: string;
@@ -80,44 +81,25 @@ export default function WordList() {
     const { sound } = await Audio.Sound.createAsync({ uri: audioUrl });
     await sound.playAsync();
   };
-  const toastConfig = {
-    success: (props: any) => (
-      <BaseToast
-        {...props}
-        style={{ borderLeftColor: "green", height: 50, width: 370 }} // Aumentando a altura
-        text1Style={{
-          fontSize: 18, // Tamanho do título maior
-          fontWeight: "bold",
-        }}
-        text2Style={{
-          fontSize: 16, // Tamanho do subtítulo maior
-        }}
-      />
-    ),
-    error: (props: any) => (
-      <ErrorToast
-        {...props}
-        style={{ borderLeftColor: "red", height: 80 }} // Aumentando a altura
-        text1Style={{
-          fontSize: 18, // Tamanho do título maior
-          fontWeight: "bold",
-        }}
-        text2Style={{
-          fontSize: 16, // Tamanho do subtítulo maior
-        }}
-      />
-    ),
-  };
 
-  // Função para adicionar palavra aos favoritos
   const addToFavorites = async (word: Word) => {
     try {
       await set(ref(db, `favorites/${word.id}`), word);
       Toast.show({
         type: "success",
         text1: "Palavra adicionada aos favoritos!",
+        visibilityTime: 2000,
+        position: "top",
+        // Identificador único para evitar conflitos
       });
     } catch (error) {
+      Toast.show({
+        type: "error",
+        text1: "Erro ao adicionar aos favoritos!",
+        visibilityTime: 2000,
+        position: "top",
+        // Identificador único para evitar conflitos
+      });
       console.error("Erro ao adicionar aos favoritos:", error);
     }
   };
@@ -169,7 +151,7 @@ export default function WordList() {
           </View>
         )}
       />
-      <Toast position="bottom" config={toastConfig} />
+      <Toast position="top" config={toastConfig} />
     </View>
   );
 }
