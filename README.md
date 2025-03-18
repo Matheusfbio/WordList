@@ -1,6 +1,4 @@
 
-# Mobile Challenge Coodesh
-
 ### Descrição
 
 O proposito do teste é criar uma app para listar palavras em ingles usando como base a api [Free Dictionary API](https://dictionaryapi.dev/) e seguindo os casos de uso mencionado no teste
