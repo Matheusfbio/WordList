@@ -40,7 +40,6 @@ const History: React.FC<HistoryProps> = ({ onSelectWord }) => {
       }
     } catch (error) {
       console.error(`Erro ao buscar a palavra ${word}:`, error);
-      // Alert.alert(`Erro ao buscar a palavra ${word}: ${error}`);
     }
     return {
       word,
@@ -53,13 +52,9 @@ const History: React.FC<HistoryProps> = ({ onSelectWord }) => {
     const historyRef = ref(db, "history");
     const unsubscribe = onValue(historyRef, async (snapshot) => {
       const data = snapshot.val();
-      console.log("🔥 Dados do Firebase:", data);
-
       if (data) {
         const words = Object.values(data) as string[];
-
         const detailedHistory = await Promise.all(words.map(fetchWordDetails));
-
         setHistory(detailedHistory.reverse());
       } else {
         setHistory([]);
@@ -78,7 +73,11 @@ const History: React.FC<HistoryProps> = ({ onSelectWord }) => {
       <Text style={styles.title}>Histórico de Pesquisas</Text>
       <ScrollView>
         {history.map((wordData, index) => (
-          <TouchableOpacity key={index} style={styles.historyItem} disabled>
+          <TouchableOpacity
+            key={index}
+            style={styles.historyItem}
+            onPress={() => onSelectWord(wordData.word)}
+          >
             <Text style={styles.word}>{wordData.word}</Text>
             <Text style={styles.phonetic}>{wordData.phonetic}</Text>
             <Text style={styles.definition} numberOfLines={2}>
