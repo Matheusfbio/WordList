@@ -20,13 +20,20 @@ export const MaterialTopTabs = withLayoutContext<
 
 export default function TabLayout() {
   return (
-    <MaterialTopTabs>
-      <MaterialTopTabs.Screen name="index" options={{ title: "Word list" }} />
+    <MaterialTopTabs
+      screenOptions={{
+        tabBarStyle: {
+          paddingTop: 20,
+        },
+      }}
+    >
+      <MaterialTopTabs.Screen name="index" options={{ title: "Translation" }} />
       <MaterialTopTabs.Screen name="History" options={{ title: "History" }} />
       <MaterialTopTabs.Screen
         name="Favorites"
         options={{ title: "Favorites" }}
       />
+      <MaterialTopTabs.Screen name="chat" options={{ title: "Chat" }} />
     </MaterialTopTabs>
   );
 }

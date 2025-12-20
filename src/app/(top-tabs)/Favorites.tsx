@@ -9,6 +9,9 @@ import {
 } from "react-native";
 import { db } from "../../../firebaseConfig";
 import { ref, onValue, remove } from "firebase/database";
+import * as Speech from "expo-speech";
+import Toast from "react-native-toast-message";
+import { toastConfig } from "@/Components/CustomToast";
 
 interface Word {
   id: string;
@@ -17,6 +20,8 @@ interface Word {
   phonetic: string;
   synonyms?: string[];
   example?: string;
+  translation?: string;
+  type?: "word" | "phrase";
 }
 
 export default function Favorites() {
@@ -34,27 +39,52 @@ export default function Favorites() {
     });
   }, []);
 
-  const removeFromFavorites = async (word: string) => {
+  const removeFromFavorites = async (wordId: string) => {
     try {
-      await remove(ref(db, `favorites/${word}`));
-      Alert.alert("Palavra removida dos favoritos!");
+      await remove(ref(db, `favorites/${wordId}`));
+      Toast.show({
+        type: "success",
+        text1: "Palavra removida dos favoritos!",
+        visibilityTime: 2000,
+        position: "bottom",
+      });
     } catch (error) {
+      Toast.show({
+        type: "error",
+        text1: "Erro ao remover dos favoritos!",
+        visibilityTime: 2000,
+        position: "bottom",
+      });
       console.error("Erro ao remover dos favoritos:", error);
     }
   };
 
+  const speakText = (text: string) => {
+    Speech.speak(text, {
+      language: "en",
+      pitch: 1.0,
+      rate: 0.8,
+    });
+  };
+
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Favoritos</Text>
       <ScrollView>
         {favorites.length > 0 ? (
           favorites.map((word) => (
             <View key={word.id} style={styles.wordContainer}>
               <Text style={styles.wordText}>{word.word}</Text>
-              <Text style={styles.definition}>{word.definition}</Text>
+              <Text style={styles.definition}>
+                {word.type === "phrase" ? word.translation : word.definition}
+              </Text>
+              {word.type === "phrase" && (
+                <TouchableOpacity onPress={() => speakText(word.word)}>
+                  <Text style={styles.audioText}>▶ Ouvir frase</Text>
+                </TouchableOpacity>
+              )}
               <TouchableOpacity
                 style={styles.removeButton}
-                onPress={() => removeFromFavorites(word.word)}
+                onPress={() => removeFromFavorites(word.id)}
               >
                 <Text style={styles.removeButtonText}>Remover</Text>
               </TouchableOpacity>
@@ -64,6 +94,7 @@ export default function Favorites() {
           <Text style={styles.noFavorites}>Nenhuma palavra favorita</Text>
         )}
       </ScrollView>
+      <Toast config={toastConfig} />
     </View>
   );
 }
@@ -112,5 +143,11 @@ const styles = StyleSheet.create({
     marginTop: 20,
     fontSize: 16,
     color: "#888",
+  },
+  audioText: {
+    color: "blue",
+    marginTop: 5,
+    fontSize: 14,
+    textDecorationLine: "underline",
   },
 });

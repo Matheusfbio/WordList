@@ -10,6 +10,7 @@ import {
 } from "react-native";
 import Toast from "react-native-toast-message";
 import { Audio } from "expo-av";
+import * as Speech from "expo-speech";
 import { ref, onValue, set, push } from "firebase/database";
 import { db } from "../../../firebaseConfig";
 import { toastConfig } from "@/Components/CustomToast"; // Importando o CustomToast
@@ -20,10 +21,12 @@ interface Word {
   definition: string;
   phonetic: string;
   audioUrl?: string;
+  translation?: string;
+  type: "word" | "phrase";
 }
 
 export default function WordList() {
-  const [selectedWord, setSelectedWord] = useState<Word | null>(null);
+  const [selectedWord, setSelectbedWord] = useState<Word | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [history, setHistory] = useState<string[]>([]);
@@ -38,37 +41,82 @@ export default function WordList() {
     });
   }, []);
 
+  const translateText = async (text: string) => {
+    try {
+      const response = await fetch(
+        `https://api.mymemory.translated.net/get?q=${encodeURIComponent(
+          text
+        )}&langpair=en|pt`
+      );
+      const data = await response.json();
+      return data.responseData?.translatedText || "Tradução não disponível";
+    } catch (error) {
+      console.error("Erro na tradução:", error);
+      return "Erro na tradução";
+    }
+  };
+
   const fetchWordDetails = async () => {
     if (!searchTerm.trim()) return;
     setLoading(true);
     setError(null);
     setWords([]);
 
+    const isPhrase = searchTerm.includes(" ");
+
     try {
-      const response = await fetch(
-        `https://api.dictionaryapi.dev/api/v2/entries/en/${searchTerm}`
-      );
-      if (!response.ok) throw new Error("Essa palavra não existe");
+      if (isPhrase) {
+        // Traduzir frase
+        const translation = await translateText(searchTerm);
+        const phraseData: Word = {
+          id: searchTerm.toLowerCase().replace(/\s+/g, "-"),
+          word: searchTerm,
+          definition: translation,
+          phonetic: "Frase traduzida",
+          translation,
+          type: "phrase",
+        };
 
-      const data = await response.json();
-      const fetchedWord: Word = {
-        id: data[0].word,
-        word: data[0].word,
-        phonetic: data[0].phonetics?.[0]?.text || "Pronúncia não disponível",
-        definition:
-          data[0].meanings
-            ?.flatMap((meaning: any) =>
-              meaning.definitions.map((def: any) => def.definition)
-            )
-            ?.join("\n") || "Definição não disponível",
-        audioUrl: data[0].phonetics?.find((p: any) => p.audio)?.audio || null,
-      };
+        setWords([phraseData]);
 
-      setWords([fetchedWord]);
+        // Salvar no histórico
+        const newHistoryRef = push(ref(db, "history"));
+        await set(newHistoryRef, {
+          text: searchTerm,
+          translation,
+          type: "phrase",
+        });
+      } else {
+        // Buscar palavra no dicionário
+        const response = await fetch(
+          `https://api.dictionaryapi.dev/api/v2/entries/en/${searchTerm}`
+        );
+        if (!response.ok) throw new Error("Essa palavra não existe");
 
-      // Salva a palavra pesquisada no Firebase para o histórico
-      const newHistoryRef = push(ref(db, "history"));
-      await set(newHistoryRef, fetchedWord.word);
+        const data = await response.json();
+        const fetchedWord: Word = {
+          id: data[0].word,
+          word: data[0].word,
+          phonetic: data[0].phonetics?.[0]?.text || "Pronúncia não disponível",
+          definition:
+            data[0].meanings
+              ?.flatMap((meaning: any) =>
+                meaning.definitions.map((def: any) => def.definition)
+              )
+              ?.join("\n") || "Definição não disponível",
+          audioUrl: data[0].phonetics?.find((p: any) => p.audio)?.audio || null,
+          type: "word",
+        };
+
+        setWords([fetchedWord]);
+
+        // Salvar no histórico
+        const newHistoryRef = push(ref(db, "history"));
+        await set(newHistoryRef, {
+          text: fetchedWord.word,
+          type: "word",
+        });
+      }
     } catch (err: any) {
       setError(err.message || "Erro ao carregar os dados.");
     } finally {
@@ -82,6 +130,14 @@ export default function WordList() {
     await sound.playAsync();
   };
 
+  const speakText = (text: string) => {
+    Speech.speak(text, {
+      language: "en",
+      pitch: 1.0,
+      rate: 0.8,
+    });
+  };
+
   const addToFavorites = async (word: Word) => {
     try {
       await set(ref(db, `favorites/${word.id}`), word);
@@ -89,7 +145,7 @@ export default function WordList() {
         type: "success",
         text1: "Palavra adicionada aos favoritos!",
         visibilityTime: 2000,
-        position: "top",
+        position: "bottom",
         // Identificador único para evitar conflitos
       });
     } catch (error) {
@@ -97,7 +153,7 @@ export default function WordList() {
         type: "error",
         text1: "Erro ao adicionar aos favoritos!",
         visibilityTime: 2000,
-        position: "top",
+        position: "bottom",
         // Identificador único para evitar conflitos
       });
       console.error("Erro ao adicionar aos favoritos:", error);
@@ -108,7 +164,7 @@ export default function WordList() {
     <View style={styles.container}>
       <TextInput
         style={styles.input}
-        placeholder="Digite uma palavra"
+        placeholder="Digite uma palavra ou frase"
         value={searchTerm}
         onChangeText={setSearchTerm}
         onSubmitEditing={fetchWordDetails}
@@ -135,9 +191,14 @@ export default function WordList() {
             <Text style={styles.word}>{item.word}</Text>
             <Text style={styles.phonetic}>{item.phonetic}</Text>
             <Text style={styles.definition}>{item.definition}</Text>
-            {item.audioUrl && (
+            {item.audioUrl && item.type === "word" && (
               <TouchableOpacity onPress={() => playAudio(item.audioUrl)}>
                 <Text style={styles.audioText}>▶ Ouvir pronúncia</Text>
+              </TouchableOpacity>
+            )}
+            {item.type === "phrase" && (
+              <TouchableOpacity onPress={() => speakText(item.word)}>
+                <Text style={styles.audioText}>▶ Ouvir frase</Text>
               </TouchableOpacity>
             )}
             <TouchableOpacity
@@ -151,7 +212,7 @@ export default function WordList() {
           </View>
         )}
       />
-      <Toast position="top" config={toastConfig} />
+      <Toast config={toastConfig} />
     </View>
   );
 }
