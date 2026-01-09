@@ -94,7 +94,7 @@ export default function Favorites() {
           <Text style={styles.noFavorites}>Nenhuma palavra favorita</Text>
         )}
       </ScrollView>
-      <Toast config={toastConfig} />
+      <Toast position="top" config={toastConfig} />
     </View>
   );
 }

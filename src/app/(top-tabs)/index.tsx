@@ -84,6 +84,7 @@ export default function WordList() {
         await set(newHistoryRef, {
           text: searchTerm,
           translation,
+          phonetic: "Frase traduzida",
           type: "phrase",
         });
       } else {
@@ -114,6 +115,7 @@ export default function WordList() {
         const newHistoryRef = push(ref(db, "history"));
         await set(newHistoryRef, {
           text: fetchedWord.word,
+          phonetic: fetchedWord.phonetic,
           type: "word",
         });
       }
@@ -212,7 +214,7 @@ export default function WordList() {
           </View>
         )}
       />
-      <Toast config={toastConfig} />
+      <Toast position="top" config={toastConfig} />
     </View>
   );
 }

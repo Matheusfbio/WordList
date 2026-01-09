@@ -30,10 +30,41 @@ const History: React.FC = () => {
     if (typeof item === "object" && item.type === "phrase") {
       return {
         word: item.text,
-        phonetic: "Frase traduzida",
+        phonetic: item.phonetic || "Frase traduzida",
         definition: item.translation,
         translation: item.translation,
         type: "phrase",
+      };
+    }
+
+    if (typeof item === "object" && item.type === "word" && item.phonetic) {
+      try {
+        const response = await fetch(
+          `https://api.dictionaryapi.dev/api/v2/entries/en/${item.text}`
+        );
+        const data = await response.json();
+
+        if (data && Array.isArray(data) && data.length > 0) {
+          return {
+            word: item.text,
+            phonetic: item.phonetic,
+            definition:
+              data[0].meanings?.[0]?.definitions?.[0]?.definition ||
+              "Definição não encontrada",
+            audioUrl:
+              data[0].phonetics?.find((p: any) => p.audio)?.audio || null,
+            type: "word",
+          };
+        }
+      } catch (error) {
+        console.error(`Erro ao buscar a palavra ${item.text}:`, error);
+      }
+
+      return {
+        word: item.text,
+        phonetic: item.phonetic,
+        definition: "Definição não encontrada",
+        type: "word",
       };
     }
 
